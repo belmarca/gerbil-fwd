@@ -13,20 +13,14 @@
 ;; OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 
-(import (only-in :std/net/httpd
-                 http-register-handler
-                 http-response-write
-                 http-request-method)
+(import :std/net/httpd
         (for-syntax
-         (only-in :std/net/httpd
-                  http-register-handler
-                  http-response-write
-                  http-request-method)
+         :std/net/httpd
          (only-in :std/iter for in-range)
          (only-in :std/srfi/13
                   string-drop)))
 
-(export defhandler route
+(export defhandler route http-error
         ct-text/plain ct-text/html ct-app/json)
 
 (begin-syntax
@@ -40,11 +34,15 @@
        +handler-suffix+)
       1)))
 
+  ;; TODO: use new format-id in stdlib
   (def (identifier->handler stx)
     (string->symbol
-      (string-append
-       (symbol->string (stx-e stx))
-       +handler-suffix+))))
+     (string-append
+      (symbol->string (stx-e stx))
+      +handler-suffix+))))
+
+(def (http-error res sc msg)
+  (http-response-write res sc '(("Content-Type" . "text/plain")) msg))
 
 ;; Content-Types
 (define-values (ct-text/plain ct-text/html ct-app/json)
@@ -54,47 +52,56 @@
    '("Content-Type" . "application/json")))
 
 (defsyntax (defhandler stx)
+
   ;; parse the kw: method from the arguments
   ;; and return a list to be used by case
   (def (parse-methods stx)
-    (let lp ((rest stx)
-             (methods []))
-      (syntax-case rest ()
-        ((GET: response . rest)
-         (lp #'rest (cons [['GET] #'response] methods)))
-        ((HEAD: response . rest)
-         (lp #'rest (cons [['HEAD] #'response] methods)))
-        ((POST: response . rest)
-         (lp #'rest (cons [['POST] #'response] methods)))
-        ((PUT: response . rest)
-         (lp #'rest (cons [['PUT] #'response] methods)))
-        ((DELETE: response . rest)
-         (lp #'rest (cons [['DELETE] #'response] methods)))
-        ((CONNECT: response . rest)
-         (lp #'rest (cons [['CONNECT] #'response] methods)))
-        ((OPTIONS: response . rest)
-         (lp #'rest (cons [['OPTIONS] #'response] methods)))
-        ((TRACE: response . rest)
-         (lp #'rest (cons [['TRACE] #'response] methods)))
-        ((PATCH: response . rest)
-         (lp #'rest (cons [['PATCH] #'response] methods)))
-        ;; must deal with default responses, can't just hang!
-        (() methods))))
+    (with-syntax ((res (datum->syntax #'stx 'res)))
+      (let lp ((rest stx)
+               (methods [['else '(http-error res 501 "501\n")]]))
+        (syntax-case rest ()
+          ((GET: response . rest)
+           (lp #'rest (cons [['GET] #'response] methods)))
+          ((HEAD: response . rest)
+           (lp #'rest (cons [['HEAD] #'response] methods)))
+          ((POST: response . rest)
+           (lp #'rest (cons [['POST] #'response] methods)))
+          ((PUT: response . rest)
+           (lp #'rest (cons [['PUT] #'response] methods)))
+          ((DELETE: response . rest)
+           (lp #'rest (cons [['DELETE] #'response] methods)))
+          ((CONNECT: response . rest)
+           (lp #'rest (cons [['CONNECT] #'response] methods)))
+          ((OPTIONS: response . rest)
+           (lp #'rest (cons [['OPTIONS] #'response] methods)))
+          ((TRACE: response . rest)
+           (lp #'rest (cons [['TRACE] #'response] methods)))
+          ((PATCH: response . rest)
+           (lp #'rest (cons [['PATCH] #'response] methods)))
+          ;; TODO: default case
+          ;; else clause is always last
+          ;; ((ELSE: response . rest)
+          ;;  (lp #'[] (cons [['else #'response]] methods)))
+          (() methods)))))
 
   (syntax-case stx ()
     ((macro id kw ...)
-     (with-syntax* ((methods (parse-methods #'(kw ...)))
-                    (verb (datum->syntax #'macro 'verb))
+     (with-syntax* ((verb (datum->syntax #'macro 'verb))
+                    (body (datum->syntax #'macro 'body))
+                    (url (datum->syntax #'macro 'url))
                     (req (datum->syntax #'macro 'req))
                     (res (datum->syntax #'macro 'res))
                     (hid (datum->syntax #'macro (identifier->handler #'id)))
-                    ;; must deal with default responses, can't just hang!
+                    (methods (parse-methods #'(kw ...)))
                     (mcase (datum->syntax #'macro
-                             (cons #'case
-                                   (cons #'verb #'methods)))))
+                             (cons #'case (cons #'verb #'methods)))))
        #'(define-values (hid)
            (lambda (req res)
-             (let ((verb (http-request-method req)))
+             ;; TODO: add other vars to let
+             ;; see src/std/net/httpd/handler.ss
+             (let ((verb (http-request-method req))
+                   (body (http-request-body req)) ;; u8vector
+                   (url (http-request-url req)))
                mcase)))))))
 
 ;; TODO: refactor this monster

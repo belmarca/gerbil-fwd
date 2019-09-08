@@ -3,19 +3,15 @@
 ;;; belmarca
 ;;; Route handlers
 
-;; Standard handler as shown in Gerbil docs.
-;; (defhandler (root 200 [ct-text/plain])
-;;   (string-append "hello, " (inet-address->string (http-request-client req)) "\n"))
+(defhandler default
+  GET: (http-response-write res 200 [ct-text/plain] "default-handler\n"))
 
-;; default
-(def (default-handler req res)
-  (http-response-write res 404 '(("Content-Type" . "text/plain"))
-    "these aren't the droids you are looking for.\n"))
+(defhandler getpost
+  GET: (http-response-write res 200 [ct-text/plain] "get\n")
+  POST: (http-response-write res 200 [ct-text/plain] "post\n"))
 
-(defhandler a
-  GET: (http-response-write res 200 [ct-text/plain] "a\n"))
-
-;; (defhandler json
-;;   GET: (http-response-write res 200 '(("Content-Type" . "text/plain"))
-;;                             (let ((headers (http-request-headers req)))
-;;                                (
+(defhandler json
+  POST: (http-response-write res 200 [ct-app/json]
+                             ;; just print the raw data don't parse into json
+                             (list->string
+                              (map integer->char (u8vector->list body)))))

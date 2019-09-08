@@ -18,17 +18,8 @@
 
 (def (run address)
   (let (httpd (start-http-server! address mux: (make-default-http-mux default-handler)))
-    ;; register route as in Gerbil docs
-    ;; (http-register-handler httpd "/" root-rh)
-    ;; register route using fwd macros
-    ;; in this particular case, httpd is captured in the lexical scope
-    ;; and the route handler is assumed to be a-rh
-    (route /a)
-    ;; (route /b b-rh)
-    ;; (route /d in /v1)
-    ;; (route /d d-rh in /v3)
-    ;; (route /random)
-    ;; (route /echo)
+    (route /getpost)
+    (route /json)
     (thread-join! httpd)))
 
 (def (main . args)
