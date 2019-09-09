@@ -20,6 +20,7 @@
   (let (httpd (start-http-server! address mux: (make-default-http-mux default-handler)))
     (route /getpost)
     (route /json)
+    (route /whatever)
     (thread-join! httpd)))
 
 (def (main . args)
@@ -32,5 +33,5 @@
    (let (opt (getopt-parse gopt args))
      (run (hash-get opt 'address)))
    (catch (getopt-error? exn)
-     (getopt-display-help exn "hellod" (current-error-port))
+     (getopt-display-help exn "simpled" (current-error-port))
      (exit 1))))

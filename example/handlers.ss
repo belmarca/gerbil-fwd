@@ -4,14 +4,17 @@
 ;;; Route handlers
 
 (defhandler default
-  GET: (http-response-write res 200 [ct-text/plain] "default-handler\n"))
+  GET: (response 200 "default-handler\n"))
 
 (defhandler getpost
-  GET: (http-response-write res 200 [ct-text/plain] "get\n")
-  POST: (http-response-write res 200 [ct-text/plain] "post\n"))
+  GET: (response 200 "get\n")
+  POST: (response 200 "post\n"))
 
 (defhandler json
-  POST: (http-response-write res 200 [ct-app/json]
-                             ;; just print the raw data don't parse into json
-                             (list->string
-                              (map integer->char (u8vector->list body)))))
+  POST: (response 200 [ct-app/json]
+                  (list->string
+                   (map integer->char (u8vector->list body)))))
+
+(defhandler whatever
+  GET: (response 200 "whatever\n")
+  ELSE: (response 404 "not found\n"))
