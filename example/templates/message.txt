@@ -1,3 +1,0 @@
-Hello, this is a very nice message.
-
-It has newlines, and is an absolute joy to read.
