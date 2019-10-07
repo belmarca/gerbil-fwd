@@ -1,0 +1,16 @@
+# main.yml
+
+name: gerbil-fwd tests
+on: pull_request
+jobs:
+  test-suite:
+    name: test suite
+    runs-on: ubuntu-latest
+    container: gerbil/scheme
+    steps:
+      - uses: actions/checkout@master
+      - name: build belmarca/fwd
+        run: "$GITHUB_WORKSPACE/build.ss"
+      - name: run tests
+        run: "$GITHUB_WORKSPACE/run-tests.ss"
+
