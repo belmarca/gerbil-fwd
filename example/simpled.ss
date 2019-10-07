@@ -4,6 +4,7 @@
 ;;; Simple web server
 (import :std/net/httpd
         :std/net/address
+        ;; :std/net/request
         :std/text/json
         :std/sugar
         :std/iter
@@ -20,6 +21,7 @@
   (let (httpd (start-http-server! address mux: (make-default-http-mux default-handler)))
     (route /getpost)
     (route /json)
+    (route /json2)
     (route /whatever)
     (thread-join! httpd)))
 
