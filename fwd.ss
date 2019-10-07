@@ -11,19 +11,18 @@
 ;; WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ;; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 ;; OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-package: fwd
 
 (import :std/net/httpd
         :std/stxparam
+        :std/format
         (for-syntax
          :std/net/httpd
          :std/stxparam
-         :std/format
          (only-in :std/iter for in-range)
          (only-in :std/srfi/13
                   string-drop)))
 
-(export defhandler route response
+(export defhandler route response quasistring
         ct-text/plain ct-text/html ct-app/json)
 
 (begin-syntax
@@ -71,29 +70,29 @@ package: fwd
              (e #f))
       (syntax-case rest ()
         ((GET: response . rest)
-         (lp #'rest (cons [['GET] #'response] methods) #f))
+         (lp #'rest (cons [['GET] #'response] methods) e))
         ((HEAD: response . rest)
-         (lp #'rest (cons [['HEAD] #'response] methods) #f))
+         (lp #'rest (cons [['HEAD] #'response] methods) e))
         ((POST: response . rest)
-         (lp #'rest (cons [['POST] #'response] methods) #f))
+         (lp #'rest (cons [['POST] #'response] methods) e))
         ((PUT: response . rest)
-         (lp #'rest (cons [['PUT] #'response] methods) #f))
+         (lp #'rest (cons [['PUT] #'response] methods) e))
         ((DELETE: response . rest)
-         (lp #'rest (cons [['DELETE] #'response] methods) #f))
+         (lp #'rest (cons [['DELETE] #'response] methods) e))
         ((CONNECT: response . rest)
-         (lp #'rest (cons [['CONNECT] #'response] methods) #f))
+         (lp #'rest (cons [['CONNECT] #'response] methods) e))
         ((OPTIONS: response . rest)
-         (lp #'rest (cons [['OPTIONS] #'response] methods) #f))
+         (lp #'rest (cons [['OPTIONS] #'response] methods) e))
         ((TRACE: response . rest)
-         (lp #'rest (cons [['TRACE] #'response] methods) #f))
+         (lp #'rest (cons [['TRACE] #'response] methods) e))
         ((PATCH: response . rest)
-         (lp #'rest (cons [['PATCH] #'response] methods) #f))
+         (lp #'rest (cons [['PATCH] #'response] methods) e))
         ((ELSE: response . rest)
-         (lp () (append methods [['else #'response]]) #t))
+         (lp #'rest (append methods [['else #'response]]) #t))
         (()
          (if e
            methods
-           (append methods [['else '(response 501 "501\n")]]))))))
+           (append methods [['else #'(response 501 "501\n")]]))))))
   
   (syntax-case stx ()
     ((macro id kw ...)
