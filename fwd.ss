@@ -11,13 +11,14 @@
 ;; WHATSOEVER RESULTING FROM LOSS OF USE, DATA OR PROFITS, WHETHER IN AN
 ;; ACTION OF CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 ;; OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
-
+package: fwd
 
 (import :std/net/httpd
         :std/stxparam
         (for-syntax
          :std/net/httpd
          :std/stxparam
+         :std/format
          (only-in :std/iter for in-range)
          (only-in :std/srfi/13
                   string-drop)))
@@ -50,22 +51,8 @@
    '("Content-Type" . "text/plain")
    '("Content-Type" . "application/json")))
 
-;; see std/actor/message.ss
-(defrules defparam ()
-  ((_ macro param)
-   (begin
-     (defsyntax-parameter param #f)
-     (defsyntax (macro stx)
-       (if (identifier? stx)
-         (cond
-          ((syntax-parameter-value (quote-syntax param))
-           => values)
-          (else
-           (raise-syntax-error #f "Bad syntax; not in reaction context" stx)))
-         (raise-syntax-error #f "Bad syntax" stx))))))
-
-(defparam @request @@request)
-(defparam @response @@response)
+(defsyntax-parameter* @request @@request "Hello!")
+(defsyntax-parameter* @response @@response)
 
 (defrules response ()
   ((_ status-code body)
@@ -159,3 +146,30 @@
                    (spath (string-append (symbol->string (stx-e #'parent))
                                          (symbol->string (stx-e #'path)))))
        #'(http-register-handler server spath handler)))))
+
+(defsyntax (quasistring stx)
+  (syntax-case stx ()
+    ((macro s)
+     (stx-string? #'s)
+     (let (port (open-input-string (stx-e #'s)))
+       (let lp ((c (read-char port))
+                (sexps [])
+                (str []))
+         (cond
+          ((eq? c #\#) ;; template variable?
+           (let ((c+1 (read-char port)))
+             (cond
+              ((eq? c+1 #\{) ;; yes, read sexp
+               (let (ssexp (read port))
+                 (if (eq? (read-char port) #\}) ;; closed template variable?
+                   (lp (read-char port) (cons ssexp sexps) (cons #\a (cons #\~ str)))
+                   (error "Bad quasistring formatting."))))
+              (else ;; no, start again
+               (lp (read-char port) sexps str)))))
+          ((eq? c #!eof) ;; eof so return syntax
+           (close-input-port port)
+           (with-syntax (((vars ...) (datum->syntax #'macro (reverse sexps)))
+                         (str (list->string (reverse str))))
+             #'(apply format str [vars ...])))
+          (else ;; no, start again
+           (lp (read-char port) sexps (cons c str)))))))))
