@@ -1,4 +1,5 @@
 ![](https://github.com/belmarca/gerbil-fwd/workflows/.github/workflows/main.yml/badge.svg)
+[![Actions Status](https://github.com/belmarca/gerbil-fwd/workflows/main/badge.svg)](https://github.com/belmarca/gerbil-fwd/actions)
 # fwd - fast web development
 This library is an exploration into fast web development with Gerbil's httpd. Its macros are intended to be composable. You should be able to climb up or down the abstraction ladder and use any level you wish.
 
