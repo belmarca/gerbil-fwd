@@ -1,6 +1,6 @@
 # main.yml
 
-name: gerbil-fwd tests
+name: tests
 on:
   pull_request:
     branches:
