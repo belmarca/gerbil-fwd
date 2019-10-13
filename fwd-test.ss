@@ -17,8 +17,10 @@
         :std/net/request
         :std/text/json
         :std/sugar
+        :std/misc/text
         :gerbil/gambit/random
-        :belmarca/fwd)
+        :belmarca/fwd/routing
+        :belmarca/fwd/templates)
 
 (export fwd-test)
 
@@ -42,6 +44,17 @@
   ELSE: (response 404 "404\n")
   GET:  (response 200 "else-handler\n"))
 
+(defhandler title-template
+  POST: (let ((json (call-with-input-u8vector body read-json))
+              (template (lambda (title) (include-template "templates/index.html"))))
+          (let-hash json
+            (let (title .?title)
+              (if title
+                (response 200 (template title))
+                (response 422 "422\n"))))))
+
+(def title-template-response (include-text "templates/_index.html"))
+
 (def fwd-test
   (test-suite "test :belmarca/fwd"
 
@@ -57,6 +70,7 @@
     (route /getpost)
     (route /json)
     (route /else)
+    (route /title-template)
 
     (test-case "test default handler"
       (let* ((url (string-append server-url "/"))
@@ -111,5 +125,13 @@
         (check (request-status put) => 404)
         (check (request-text put) => "404\n")
         (request-close put)))
+
+    (test-case "test /title-template handler"
+      (let* ((url (string-append server-url "/title-template"))
+             (post (http-post url data: "{\"title\": \"Title\"}")))
+        ;; GET
+        (check (request-status post) => 200)
+        (check (request-text post) => title-template-response)
+        (request-close post)))
 
     (stop-http-server! httpd)))
